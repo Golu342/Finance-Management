@@ -1,0 +1,188 @@
+import sqlite3
+
+# Connect to the database
+conn = sqlite3.connect('finance.db')
+
+# Create a cursor object
+c = conn.cursor()
+
+# Create tables
+c.execute('''
+    CREATE TABLE IF NOT EXISTS users
+    (username TEXT PRIMARY KEY, password TEXT)
+''')
+
+c.execute('''
+    CREATE TABLE IF NOT EXISTS transactions
+    (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, category TEXT, amount REAL, type TEXT, date TEXT)
+''')
+
+c.execute('''
+    CREATE TABLE IF NOT EXISTS budgets
+    (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, category TEXT, amount REAL)
+''')
+
+# Commit the changes
+conn.commit()
+
+# Close the connection
+conn.close()
+
+
+#User Registration and Authentication
+#Next, we will implement user registration and authentication.
+
+
+import getpass
+import hashlib
+
+def register_user():
+    username = input("Enter a unique username: ")
+    password = getpass.getpass("Enter a password: ")
+    confirm_password = getpass.getpass("Confirm password: ")
+
+    if password != confirm_password:
+        print("Passwords do not match. Please try again.")
+        return
+
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_password))
+    conn.commit()
+    conn.close()
+
+    print("User registered successfully!")
+
+def authenticate_user():
+    username = input("Enter your username: ")
+    password = getpass.getpass("Enter your password: ")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT password FROM users WHERE username = ?", (username,))
+    stored_password = c.fetchone()
+
+    if stored_password is None:
+        print("Username does not exist. Please register first.")
+        return
+
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+    if hashed_password != stored_password[0]:
+        print("Incorrect password. Please try again.")
+        return
+
+    print("User authenticated successfully!")
+
+
+#Income and Expense Tracking
+#Next, we will implement income and expense tracking.
+
+
+def add_transaction():
+    username = input("Enter your username: ")
+    category = input("Enter the category (e.g., Food, Rent, Salary): ")
+    amount = float(input("Enter the amount: "))
+    type = input("Enter the type (Income/Expense): ")
+    date = input("Enter the date (YYYY-MM-DD): ")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO transactions (username, category, amount, type, date) VALUES (?, ?, ?, ?, ?)", (username, category, amount, type, date))
+    conn.commit()
+    conn.close()
+
+    print("Transaction added successfully!")
+
+def update_transaction():
+    id = int(input("Enter the transaction ID: "))
+    category = input("Enter the new category: ")
+    amount = float(input("Enter the new amount: "))
+    type = input("Enter the new type: ")
+    date = input("Enter the new date: ")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("UPDATE transactions SET category = ?, amount = ?, type = ?, date = ? WHERE id = ?", (category, amount, type, date, id))
+    conn.commit()
+    conn.close()
+
+    print("Transaction updated successfully!")
+
+def delete_transaction():
+    id = int(input("Enter the transaction ID: "))
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("DELETE FROM transactions WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+
+    print("Transaction deleted successfully!")
+
+
+#Financial Reports
+#Next, we will implement financial reports.
+
+
+def generate_monthly_report():
+    username = input("Enter your username: ")
+    month = input("Enter the month (YYYY-MM): ")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT SUM(amount) FROM transactions WHERE username = ? AND date LIKE ?", (username, month + '%'))
+    total_amount = c.fetchone()[0]
+
+    print("Monthly Report:")
+    print("Total Amount:", total_amount)
+
+def generate_yearly_report():
+    username = input("Enter your username: ")
+    year = input("Enter the year (YYYY): ")
+
+    conn = sqlite3.connect('finance.db')
+    c = conn.cursor()
+    c.execute("SELECT SUM(amount) FROM transactions WHERE username = ? AND date LIKE ?", (username, year + '%'))
+    total_amount = c.fetchone()[0]
+
+    print("Yearly Report:")
+    print("Total Amount:", total_amount)
+def main():
+    while True:
+        print("1. Register User")
+        print("2. Authenticate User")
+        print("3. Add Transaction")
+        print("4. Update Transaction")
+        print("5. Delete Transaction")
+        print("6. Generate Monthly Report")
+        print("7. Generate Yearly Report")
+        print("8. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == '1':
+            register_user()
+        elif choice == '2':
+            authenticate_user()
+        elif choice == '3':
+            add_transaction()
+        elif choice == '4':
+            update_transaction()
+        elif choice == '5':
+            delete_transaction()
+        elif choice == '6':
+            generate_monthly_report()
+        elif choice == '7':
+            generate_yearly_report()
+        elif choice == '8':
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+if __name__ == '__main__':
+    main()
+
+
